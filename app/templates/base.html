@@ -25,7 +25,15 @@
         </div>
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
-                <li><a href="/">Home</a></li>
+                <li><a href="/">主页</a></li>
+            </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('auth.logout') }}">退出</a></li>
+                {% else %}
+                <li><a href="{{ url_for('auth.login') }}"> 登录</a></li>
+                {% endif %}
             </ul>
         </div>
     </div>
@@ -40,9 +48,14 @@
             {{ message }}
         </div>
     {% endfor %}
-    <div class="page-header">
-        {% block page_content %}
-        {% endblock page_content %}
-    </div>
+
+    {% block page_content %}
+    {% endblock page_content %}
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{{ moment.include_moment() }}
 {% endblock %}
