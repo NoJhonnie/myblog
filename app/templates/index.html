@@ -4,6 +4,7 @@
 {% block title %}Myblog{% endblock %}
 
 {% block page_content %}
-<h1>Hello {% if current_user.is_authenticated %}{{ current_user.username }} {% else %}Strange {% endif %}!{{ current_time }}</h1>
+<h1>Hello {% if current_user.is_authenticated %}{{ current_user.username }} {% else %}Strange {% endif %}!</h1>
+    {{ moment().format('MMMM Do YYYY, h:mm:ss a') }}
 {{ wtf.quick_form(form) }}
 {% endblock %}

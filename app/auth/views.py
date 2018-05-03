@@ -67,12 +67,12 @@ def unconfirmed():
 
 @auth.before_app_request
 def before_request():
-    # print('1:',current_user.is_authenticated)
-    # print('2:',current_user.confirmed)
-    # print('3:',request.endpoint[:5])
-    if current_user.is_authenticated and not current_user.confirmed \
+
+    if current_user.is_authenticated:
+        current_user.ping()
+        if not current_user.confirmed \
         and request.endpoint[:5] != 'auth.' and request.endpoint != 'static':
-        return redirect(url_for('auth.unconfirmed'))
+            return redirect(url_for('auth.unconfirmed'))
 
 @auth.route('/confirm')
 @login_required
