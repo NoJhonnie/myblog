@@ -69,19 +69,19 @@ class User(UserMixin, db.Model):
         db.session.add(user)
         return True
 
-    @staticmethod
-    def change_email(token):
+    def change_email(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token.encode('utf-8'))
         except:
             return False
         new_email = data.get('new_email')
-        user = User.query.get(data.get('userId'))
-        if (user is None) or (new_email is None):
+        if (data.get('userId') != self.id) or (new_email is None):
             return False
-        user.email = new_email
-        db.session.add(user)
+        if self.query.filter_by(email=new_email).first():
+            return False
+        self.email = new_email
+        db.session.add(self)
         return True
 
 
