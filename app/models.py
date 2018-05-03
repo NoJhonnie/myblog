@@ -24,9 +24,13 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(64), unique=True, index=True)
     confirmed = db.Column(db.Boolean, default=False)
 
-    def generate_confirmation_token(self, expiration=3600):
+    def generate_confirmation_token(self, expiration=3600, *args, **kwargs):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'confirm': self.id}).decode('utf-8')
+        tempdic = dict()
+        tempdic['userId'] = self.id
+        for key, value in kwargs.items():
+            tempdic[key] = value
+        return s.dumps(tempdic).decode('utf-8')
 
     def confirm(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
@@ -34,7 +38,7 @@ class User(UserMixin, db.Model):
             data = s.loads(token.encode('utf-8'))
         except:
             return False
-        if data.get('confirm') != self.id:
+        if data.get('userId') != self.id:
             return False
         self.confirmed = True
         db.session.add(self)
@@ -50,6 +54,36 @@ class User(UserMixin, db.Model):
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @staticmethod
+    def reset_password(token, new_password):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+        user = User.query.get(data.get('userId'))
+        if user is None:
+            return False
+        user.password = new_password
+        db.session.add(user)
+        return True
+
+    @staticmethod
+    def change_email(token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+        new_email = data.get('new_email')
+        user = User.query.get(data.get('userId'))
+        if (user is None) or (new_email is None):
+            return False
+        user.email = new_email
+        db.session.add(user)
+        return True
+
 
     def __repr__(self):
         return '<User %r>' % self.username
