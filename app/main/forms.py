@@ -1,3 +1,4 @@
+from flask_pagedown.fields import PageDownField
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, BooleanField, SelectField
 from wtforms.validators import Required, DataRequired, Length, Email, Regexp, ValidationError
@@ -40,3 +41,7 @@ class EditProfileAdminForm(FlaskForm):
     def validate_username(self, field):
         if field.data != self.user.username and User.query.filter_by(username=field.data).first():
             raise ValidationError('用户名已经存在')
+# blog 文章表单
+class PostForm(FlaskForm):
+    body = PageDownField('此情此景怎能不写下来！', validators=[DataRequired()])
+    submit = SubmitField('保存')

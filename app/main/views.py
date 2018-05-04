@@ -1,34 +1,39 @@
 # coding=utf-8
 from datetime import datetime
-from flask import render_template, redirect, url_for, session, flash, abort
+from flask import render_template, redirect, url_for, session, flash, abort, request, current_app
 from flask_login import login_required, current_user
 
 from app import db
 from app.decorators import admin_required, permission_required
 from app.main import main
-from app.main.forms import EditProfileForm, EditProfileAdminForm
-from app.models import Permission, User, Role
+from app.main.forms import EditProfileForm, EditProfileAdminForm, PostForm
+from app.models import Permission, User, Role, Post
 
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
-    from app.main.forms import NameForm
-    form = NameForm()
-    if form.validate_on_submit():
-        old_name = session.get('name')
-        if old_name is not None and old_name != form.name.data:
-            flash('Looks like you have changed your name!')
-        session['name'] = form.name.data
-        # 视图函数index()注册的端点名为 main.index，简写为.index
+    form = PostForm()
+    page = request.args.get('page', 1, type=int)
+    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page, per_page=current_app.config['POSTS_PER_PAGE'],
+        error_out=False
+    )
+
+    if form.validate_on_submit() and current_user.can(Permission.WRITE_ARTICLES):
+        post = Post(body = form.body.data, author = current_user._get_current_object())
+        db.session.add(post)
         return redirect(url_for('.index'))
-    return render_template('index.html', form=form, name=session.get('name'), known = session.get('known', False), current_time = datetime.utcnow())
+    posts = pagination.items
+    return render_template('index.html', form=form, posts = posts, pagination=pagination)
 
 @main.route('/user/<username>')
 def user(username):
     user = User.query.filter_by(username=username).first()
     if user is None:
         abort(404)
-    return render_template('user.html', user=user)
+    posts = user.posts.order_by(Post.timestamp.desc()).all()
+    print(posts)
+    return render_template('user.html', user=user, posts=posts)
 
 @main.route('/edit-profile', methods=['GET', 'POST'])
 @login_required
@@ -72,7 +77,29 @@ def edit_profile_admin(id):
     form.about_me.data = user.about_me
     return render_template('edit_profile.html', form=form)
 
+@main.route('/post/<int:id>')
+def post(id):
+    post = Post.query.get_or_404(id)
+    return render_template('post.html', posts=[post])
 
+@main.route('/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit(id):
+    post = Post.query.get_or_404(id)
+    if current_user != post.author and not current_user.can(Permission.ADMINISTER):
+        abort(403)
+    form = PostForm()
+    if form.validate_on_submit():
+        post.body = form.body.data
+        db.session.add(post)
+        flash('文章已经更新')
+        return redirect(url_for('.post', id=post.id))
+    print(post.body_html,"+"*10,post.body)
+    if post.body == '' or post.body is None:
+        form.body.data=post.body_html
+    else:
+        form.body.data=post.body
+    return render_template('edit_post.html', form=form)
 
 @main.route('/admin')
 @login_required

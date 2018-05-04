@@ -15,6 +15,7 @@ class Config:
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'fj_gjc123@163.com')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'gjc314594370')
     SQLALCHEMY_TRACK_MODIFICATIONS = True
+    POSTS_PER_PAGE = 10
 
     @staticmethod
     def init_app(app):
