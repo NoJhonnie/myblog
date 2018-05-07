@@ -1,7 +1,7 @@
 <ul class="posts" style="list-style-type:none">
-    <hr>
-
+<br>
     {% for post in posts %}
+{#        {% if post.title != None %}#}
         <li class="post row">
             <div class="post-thumbnail col-sm-1">
                 <a href="{{ url_for('.user', username=post.author.username) }}">
@@ -10,19 +10,29 @@
             </div>
 
             <div class="post-content col-sm-11">
-                <div class="post-author col-sm-6"><a href="{{ url_for('.user', username=post.author.username) }}">{{ post.author.username }}</a> </div>
-                <div class="post-date col-sm-6">{{ moment(post.timestamp).fromNow() }}</div>
+                <div class="post-title col-sm-6"><a href="{{ url_for('.post', id=post.id) }}">{{ post.title }}</a></div>
+                <div class="post-author col-sm-3"><a href="{{ url_for('.user', username=post.author.username) }}">作者：{{ post.author.username }}</a> </div>
+                <div class="post-date col-sm-3">时间：{{ moment(post.timestamp).fromNow() }}</div>
                 <div class="post-body">
+                    <a href="{{ url_for('.post', id=post.id) }}">
                     {% if post.body_html %}
-                        {{ post.body_html|safe }}
+                        {{ post.body_html[:77]|safe }}
                     {% else %}
-                        {{ post.body|safe }}
+                        {{ post.body[:77]|safe }}
                     {% endif %}
+                    </a>
                 </div>
                 <div class="post-footer">
                     <a href="{{ url_for('.post', id=post.id) }}">
-                        <span class="label label-default">分享链接</span>
+                        <span class="label label-default">全文浏览</span>
                     </a>
+                    &nbsp;
+                    <a href="{{ url_for('.post', id=post.id) }}#comments">
+                        <span class="label-primary label">
+                            {{ post.comments.count() }}评论
+                        </span>
+                    </a>
+                    &nbsp;
                     {% if current_user == post.author %}
                         <a href="{{ url_for('.edit', id=post.id) }}">
                             <span class="label label-primary">编辑</span>
@@ -36,6 +46,7 @@
             </div>
         </li>
         <hr>
+{#        {% endif %}#}
     {% endfor %}
 
 </ul>

@@ -1,6 +1,65 @@
 {% extends 'base.html' %}
+{% import 'bootstrap/wtf.html' as wtf %}
+{% import '_macros.html' as macros %}
+
 {% block title %}Myblog-博客{% endblock %}
 
+{% block scripts %}
+{{ super() }}
+{{ pagedown.include_pagedown() }}
+{% endblock %}
+
 {% block page_content %}
-{% include '_posts.html' %}
+    {% for post in posts %}
+    <div class="post-content">
+                <div class="post-title" align="center"><h1>{{ post.title }}</h1></div>
+                <div class="post-body">
+                    {% if post.body_html %}
+                        {{ post.body_html|safe }}
+                    {% else %}
+                        {{ post.body|safe }}
+                    {% endif %}
+                </div>
+                <div class="post-thumbnai col-sm-1">
+                    <a href="{{ url_for('.user', username=post.author.username) }}">
+                       <img src="{{ post.author.gravatar(size=40) }}" class="img-rounded profile-thumbnail">
+                    </a>
+                </div>
+
+
+                <div class="post-footer">
+                    <div class="post-author col-sm-2"><a href="{{ url_for('.user', username=post.author.username) }}">{{ post.author.username }}</a> </div>
+                    <div class="post-date col-sm-2">{{ moment(post.timestamp).fromNow() }}</div>
+                    {% if current_user == post.author %}
+                    <div class="post-edit">
+                        <a href="{{ url_for('.edit', id=post.id) }}">
+                            <span class="label label-primary">编辑</span>
+                        </a>
+                    </div>
+                    {% elif current_user.is_administrator() %}
+                    <div class="post-edit">
+                        <a href="{{ url_for('.edit', id=post.id) }}">
+                            <span class="label label-danger">编辑</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+    </div>
+        <br><br>
+    <div class="comment-content">
+        <h4 id="comments">评论</h4>
+        {% if current_user.can(Permission.COMMENT) %}
+            <div class="comment-form">
+                {{ wtf.quick_form(form) }}
+            </div>
+        {% endif %}
+    <hr>
+        {% include '_comments.html' %}
+        {% if pagination %}
+            <div class="pagination">
+                {{ macros.pagination_widget(pagination, '.post', fragment='#comments', id=posts[0].id) }}
+            </div>
+        {% endif %}
+    </div>
+    {% endfor %}
 {% endblock %}

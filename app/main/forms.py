@@ -7,7 +7,7 @@ from app.models import Role, User
 
 
 class NameForm(FlaskForm):
-    name = StringField('What is your name?', validators=[Required()])
+    name = StringField('What is your name?', validators=[DataRequired()])
     submit = SubmitField('提交')
 
 class EditProfileForm(FlaskForm):
@@ -43,5 +43,10 @@ class EditProfileAdminForm(FlaskForm):
             raise ValidationError('用户名已经存在')
 # blog 文章表单
 class PostForm(FlaskForm):
+    title = StringField('标题', validators=[DataRequired(), Length(1,64)])
     body = PageDownField('此情此景怎能不写下来！', validators=[DataRequired()])
     submit = SubmitField('保存')
+
+class CommentForm(FlaskForm):
+    body = PageDownField('', validators=[DataRequired()])
+    submit = SubmitField('回复')
