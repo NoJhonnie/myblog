@@ -252,6 +252,9 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+posts_tags = db.Table('posts_tags',
+    db.Column('post_id', db.Integer, db.ForeignKey('posts.id')),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tags.id')))
 
 class Post(db.Model):
     __tablename__ = 'posts'
@@ -262,6 +265,7 @@ class Post(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     body_html = db.Column(db.Text)
     comments = db.relationship('Comment', backref='post', lazy='dynamic')
+    tags = db.relationship('Tag', backref='post', lazy='dynamic')
 
     #处理 markdwon 文本
     @staticmethod
@@ -289,13 +293,24 @@ class Post(db.Model):
                      author_id=u.id)
             db.session.add(p)
             db.session.commit()
+    def __init__(self, title):
+        self.title = title
+
+    def __repr__(self):
+        return '<Post %s>' % self.title
+
 
 class Tag(db.Model):
     __tablename__ = 'tags'
     id = db.Column(db.Integer, primary_key=True)
-    tag = db.Column(db.String(10))
-    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+    name = db.Column(db.String(60))
+
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return '<Tag %s>' % self.name
+
 
 class Comment(db.Model):
     __tablename__ = 'comments'
