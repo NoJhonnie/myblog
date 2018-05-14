@@ -40,7 +40,7 @@
             {% endif %}
         {% endif %}
             关注他的人:<a href="{{ url_for('.followers', username=user.username) }}">
-                <span class="badge">{{ user.followers.count() - 1 }}</span>
+                <span class="badge">{{ user.follower.count() - 1 }}</span>
             </a>&nbsp;
             他关注的人:<a href="{{ url_for('.followed_by', username=user.username) }}">
                 <span class="badge">{{ user.followed.count() - 1 }}</span>

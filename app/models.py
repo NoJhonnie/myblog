@@ -92,7 +92,7 @@ class User(UserMixin, db.Model):
                                backref=db.backref('follower', lazy='joined'),
                                lazy='dynamic',
                                cascade='all, delete-orphan')
-    followers = db.relationship('Follow',
+    follower = db.relationship('Follow',
                                foreign_keys=[Follow.followed_id],
                                backref=db.backref('followed', lazy='joined'),
                                lazy='dynamic',
@@ -289,6 +289,13 @@ class Post(db.Model):
                      author_id=u.id)
             db.session.add(p)
             db.session.commit()
+
+class Tag(db.Model):
+    __tablename__ = 'tags'
+    id = db.Column(db.Integer, primary_key=True)
+    tag = db.Column(db.String(10))
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
 
 class Comment(db.Model):
     __tablename__ = 'comments'
