@@ -6,6 +6,7 @@ import bleach
 from flask import current_app
 from flask_login import UserMixin, AnonymousUserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from jieba.analyse import ChineseAnalyzer
 from markdown import markdown
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -266,6 +267,9 @@ class User(UserMixin, db.Model):
 
 class Post(db.Model):
     __tablename__ = 'posts'
+    __searchable__ = ['body', 'body_html', 'title']
+    __analyzer__ = ChineseAnalyzer()
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(64), index=True)
     body = db.Column(db.Text)

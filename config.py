@@ -18,6 +18,9 @@ class Config:
     POSTS_PER_PAGE = 10
     FOLLOWERS_PER_PAGE = 20
     COMMENTS_PER_PAGE = 10
+    MSEARCH_INDEX_NAME = 'whoosh_index'
+    MSEARCH_BACKEND = 'whoosh'
+    MSEARCH_ENABLE = True
 
     @staticmethod
     def init_app(app):

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Searching{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>搜索关键词： "{{query}}" 共{{ count }}篇</h1>
+</div>
+<ul class="posts">
+    {% include '_posts.html' %}
+</ul>
+{% endblock %}

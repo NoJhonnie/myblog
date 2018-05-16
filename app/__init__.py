@@ -5,6 +5,7 @@ from flask_mail import Mail
 from flask_moment import Moment
 from flask_pagedown import PageDown
 from flask_sqlalchemy import SQLAlchemy
+import flask_whooshalchemyplus
 from config import config
 
 bootstrap = Bootstrap()
@@ -28,6 +29,8 @@ def create_app(config_name):
     db.init_app(app)
     pagedown.init_app(app)
     login_manager.init_app(app)
+    flask_whooshalchemyplus.init_app(app)
+
 
     # 注册蓝本
     from .main import main as main_blueprint

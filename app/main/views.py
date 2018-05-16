@@ -11,10 +11,12 @@ from app.decorators import admin_required, permission_required
 from app.main import main
 from app.main.forms import EditProfileForm, EditProfileAdminForm, PostForm, CommentForm
 from app.models import Permission, User, Role, Post, Comment, Tag
+import flask_whooshalchemyplus
 
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
+    flask_whooshalchemyplus.index_one_model(Post)
     form = PostForm()
     page = request.args.get('page', 1, type=int)
     if form.validate_on_submit() and current_user.can(Permission.WRITE_ARTICLES):
@@ -322,3 +324,17 @@ def for_admin():
         return render_template('admin.html', users=users, pagination=pagination)
     else:
         return redirect(url_for('.index'))
+
+
+@main.route('/search', methods=['POST'])
+def search():
+    if not request.form['search']:
+        return redirect(url_for('.index'))
+    return redirect(url_for('.search_results', query=request.form['search']))
+
+
+@main.route('/search_results/<query>')
+def search_results(query):
+    results = Post.query.whoosh_search(query).all()
+    count = len(results)
+    return render_template('search.html', query=query, posts=results, count = count)
