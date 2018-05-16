@@ -6,6 +6,12 @@
 {% block scripts %}
 {{ super() }}
 {{ pagedown.include_pagedown() }}
+<script src="{{ url_for('static', filename='ckeditor/ckeditor.js') }}"></script>
+<script>
+    CKEDITOR.replace('editor', {
+        filebrowserImageUploadUrl: '/ckupload/',
+    });
+</script>
 {% endblock %}
 
 {% block page_content %}
@@ -20,7 +26,37 @@
 </div>
 <div>
     {% if current_user.can(Permission.WRITE_ARTICLES) %}
-        {{ wtf.quick_form(form) }}
+        <form method="POST" action="#" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+              {{ form.title.label }}
+              {% if form.title.errors %}
+                {% for e in form.title.errors %}
+                  <p class="help-block">{{ e }}</p>
+                {% endfor %}
+              {% endif %}
+              {{ form.title(class_='form-control', value='标题') }}
+            </div>
+            <div class="form-group">
+              {{ form.tag.label }}
+              {% if form.tag.errors %}
+                {% for e in form.title.errors %}
+                  <p class="help-block">{{ e }}</p>
+                {% endfor %}
+              {% endif %}
+              {{ form.tag(class_='form-control', value='标签') }}
+            </div>
+            <div class="form-gruop">
+              {{ form.body.label }}
+              {% if form.body.errors %}
+                {% for e in form.body.errors %}
+                  <p class="help-block">{{ e }}</p>
+                {% endfor %}
+              {% endif %}
+              {{ form.body(class_='form-contril', class='ckeditor') }}
+            </div>
+            <input class="btn-primary" type="submit" value="Submit">
+        </form>
     {% endif %}
 </div>
     <br><br>

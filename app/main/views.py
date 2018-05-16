@@ -1,13 +1,16 @@
 # coding=utf-8
+import os
 from datetime import datetime
+from random import random
+import urllib
 from flask import render_template, redirect, url_for, session, flash, abort, request, current_app, make_response
 from flask_login import login_required, current_user
-
+import json
 from app import db
 from app.decorators import admin_required, permission_required
 from app.main import main
 from app.main.forms import EditProfileForm, EditProfileAdminForm, PostForm, CommentForm
-from app.models import Permission, User, Role, Post, Comment
+from app.models import Permission, User, Role, Post, Comment, Tag
 
 
 @main.route('/', methods=['GET', 'POST'])
@@ -15,7 +18,15 @@ def index():
     form = PostForm()
     page = request.args.get('page', 1, type=int)
     if form.validate_on_submit() and current_user.can(Permission.WRITE_ARTICLES):
-        post = Post(body = form.body.data, title=form.title.data, author = current_user._get_current_object())
+        tag = Tag.query.filter_by(name=form.tag.data.strip()).first_or_404()
+        if tag == None:
+            tag = Tag(name=form.tag.data.strip())
+            db.session.add(tag)
+        # current_user._get_current_object().tags = [tag]
+        post = Post(body = form.body.data,
+                    title=form.title.data,
+                    tags = [tag],
+                    author = current_user._get_current_object())
         db.session.add(post)
         db.session.commit()
         return redirect(url_for('.index'))
@@ -54,6 +65,67 @@ def user(username):
         abort(404)
     posts = user.posts.order_by(Post.timestamp.desc()).all()
     return render_template('user.html', user=user, posts=posts)
+
+@main.route('/tag/<id>')
+def tag(id=0):
+    tag = Tag.query.filter_by(id=id).first()
+    if tag == None:
+        posts = Post.query.all()
+    else:
+        posts = tag.post.all()
+        print(posts)
+    tags = Tag.query.all()
+
+
+    return render_template('tag.html', tags=tags, posts=posts)
+
+# 测试图片上传
+@main.route('/upload/')
+def upload():
+    return render_template('upload.html')
+
+# ckeditor 上传图片
+def gen_rnd_filename():
+    filename_prefix = datetime.now().strftime('%Y%m%d%H%M%S')
+    return '%s%s' % (filename_prefix, str(random.randrange(1000, 10000)))
+
+@main.route('/ckupload/', methods=['POST', 'OPTIONS'])
+def ckupload():
+    """CKEditor file upload"""
+    error = ''
+    url = ''
+    callback = request.args.get("CKEditorFuncNum")
+    print('upload' in request.files)
+    print(request.method == 'POST')
+    if request.method == 'POST' and 'upload' in request.files:
+
+        fileobj = request.files['upload']
+        fname, fext = os.path.splitext(fileobj.filename)
+        rnd_name = '%s%s' % (gen_rnd_filename(), fext)
+        filepath = os.path.join(main.static_folder, 'upload', rnd_name)
+        # 检查路径是否存在，不存在则创建
+        dirname = os.path.dirname(filepath)
+        if not os.path.exists(dirname):
+            try:
+                os.makedirs(dirname)
+            except:
+                error = 'ERROR_CREATE_DIR'
+        elif not os.access(dirname, os.W_OK):
+            error = 'ERROR_DIR_NOT_WRITEABLE'
+        if not error:
+            fileobj.save(filepath)
+            url = url_for('static', filename='%s/%s' % ('upload', rnd_name))
+    else:
+
+        error = 'post error'
+    res = """
+    <script type="text/javascript">
+      window.parent.CKEDITOR.tools.callFunction(%s, '%s', '%s');
+    </script>
+    """ % (callback, url, error)
+    response = make_response(res)
+    response.headers["Content-Type"] = "text/html"
+    return response
 
 @main.route('/edit-profile', methods=['GET', 'POST'])
 @login_required

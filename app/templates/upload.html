@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>A Simple Page with CKEditor</title>
+        <!-- 请确保CKEditor文件路径正确 -->
+        <script src="{{ url_for('static', filename='ckeditor/ckeditor.js') }}"></script>
+        <script>
+            CKEDITOR.replace('editor1', {
+                filebrowserUploadUrl: '/ckupload/',
+            });
+        </script>
+    </head>
+    <body>
+        <form method="POST" action="{{ url_for('.ckupload') }}" enctype="multipart/form-data">
+            <textarea name="editor1" id="editor1" class="ckeditor" rows="10" cols="80">
+                This is my textarea to be replaced with CKEditor.
+            </textarea>
+            <input class="btn-primary" type="submit" value="Submit">
+        </form>
+    </body>
+</html>

@@ -42,6 +42,14 @@
                             <span class="label label-danger">编辑</span>
                         </a>
                     {% endif %}
+                &nbsp;&nbsp;
+                    Tags:
+                    {% for tag in post.tags %}
+                    <a href="{{ url_for('.tag', id=tag.id, username=post.author.username) }}">
+                            {{ tag.name }}
+                    </a>
+                        |
+                    {% endfor %}
                 </div>
             </div>
         </li>

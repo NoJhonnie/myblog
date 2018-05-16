@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Myblog-标签{% endblock %}
+
+{% block page_content %}
+
+
+<div class="page-header row">
+
+    <div class="col-sm-1">
+        <a href="{{ url_for('.tag', id=0) }}">
+                <span class="label label-success">
+                    All
+                </span>
+        </a>&nbsp;&nbsp;
+{#        <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}">#}
+    </div>
+    <div class="col-sm-11">
+        {% for tag in tags %}
+{#            {% if tag.posts.all()[0].author.username == current_user.username %}#}
+            <a href="{{ url_for('.tag', id=tag.id) }}">
+                <span class="label label-info">
+                    {{ tag.name }}
+                </span>
+            </a>&nbsp;&nbsp;
+{#            {% endif %}#}
+        {% endfor %}
+
+{#        <h1>{{ user.username }}</h1>#}
+
+{#        {% if user.name %}#}
+{#            <p>#}
+{#            {% if user.name %}#}
+{#                {{ user.name }}#}
+{#            {% endif %}#}
+{#            </p>#}
+{#        {% endif %}#}
+    </div>
+</div>
+
+    {% include '_posts.html' %}
+{% endblock %}

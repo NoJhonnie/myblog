@@ -68,8 +68,13 @@ class Follow(db.Model):
     followed_id = db.Column(db.Integer,
                             db.ForeignKey('users.id'),
                             primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
 
+posts_tags = db.Table('posts_tags',
+    db.Column('post_id', db.Integer, db.ForeignKey('posts.id')),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tags.id')),
+    # db.Column('author_id', db.Integer, db.ForeignKey('users.id')),
+    db.Column('timestamp', db.DateTime, default=datetime.now()))
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -82,11 +87,12 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(64))
     location = db.Column(db.String(64))
     about_me = db.Column(db.Text())
-    member_since = db.Column(db.DateTime(), default=datetime.utcnow)
-    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+    member_since = db.Column(db.DateTime(), default=datetime.now)
+    last_seen = db.Column(db.DateTime(), default=datetime.now)
     avatar_hash = db.Column(db.String(32))
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
+    # tags = db.relationship('Tag', secondary=posts_tags, backref=db.backref('author', lazy='dynamic'))
     followed = db.relationship('Follow',
                                foreign_keys=[Follow.follower_id],
                                backref=db.backref('follower', lazy='joined'),
@@ -102,6 +108,7 @@ class User(UserMixin, db.Model):
         super(User, self).__init__(**kwargs)
         if self.role is None:
             if self.email == current_app.config['FLASKY_ADMIN']:
+                Role.insert_roles()
                 self.role = Role.query.filter_by(permissions=0xff).first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
@@ -128,10 +135,14 @@ class User(UserMixin, db.Model):
             db.session.delete(f)
 
     def is_following(self, user):
+        if user.id is None:
+            return False
         return self.followed.filter_by(
             followed_id=user.id).first() is not None
 
     def is_followed_by(self, user):
+        if user.id is None:
+            return False
         return self.followers.filter_by(
             follower_id=user.id).first() is not None
 
@@ -161,7 +172,7 @@ class User(UserMixin, db.Model):
 
 
     def ping(self):
-        self.last_seen = datetime.utcnow()
+        self.last_seen = datetime.now()
         db.session.add(self)
 
 
@@ -252,20 +263,17 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
-posts_tags = db.Table('posts_tags',
-    db.Column('post_id', db.Integer, db.ForeignKey('posts.id')),
-    db.Column('tag_id', db.Integer, db.ForeignKey('tags.id')))
 
 class Post(db.Model):
     __tablename__ = 'posts'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(64), index=True)
     body = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.now)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     body_html = db.Column(db.Text)
     comments = db.relationship('Comment', backref='post', lazy='dynamic')
-    tags = db.relationship('Tag', backref='post', lazy='dynamic')
+    tags = db.relationship('Tag', secondary=posts_tags, backref=db.backref('post', lazy='dynamic'))
 
     #处理 markdwon 文本
     @staticmethod
@@ -293,8 +301,6 @@ class Post(db.Model):
                      author_id=u.id)
             db.session.add(p)
             db.session.commit()
-    def __init__(self, title):
-        self.title = title
 
     def __repr__(self):
         return '<Post %s>' % self.title
@@ -316,7 +322,7 @@ class Comment(db.Model):
     __tablename__ = 'comments'
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.now)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     body_html = db.Column(db.Text)
     post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))

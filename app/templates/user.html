@@ -66,5 +66,8 @@
     </div>
 </div>
     <h3>{{ user.username }}发表的 blog</h3>
+{#    {% for tag in user.tags %}#}
+{#        <span class="label label-info"><a href="#">{{ tag }}</a></span>&nbsp;&nbsp;#}
+{#    {% endfor %}#}
     {% include '_posts.html' %}
 {% endblock %}

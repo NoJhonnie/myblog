@@ -44,7 +44,8 @@ class EditProfileAdminForm(FlaskForm):
 # blog 文章表单
 class PostForm(FlaskForm):
     title = StringField('标题', validators=[DataRequired(), Length(1,64)])
-    body = PageDownField('此情此景怎能不写下来！', validators=[DataRequired()])
+    body = PageDownField('内容', validators=[DataRequired()])
+    tag = StringField('标签', validators=[DataRequired(), Length(1,10)])
     submit = SubmitField('保存')
 
 class CommentForm(FlaskForm):
