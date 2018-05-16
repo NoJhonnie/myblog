@@ -68,16 +68,21 @@ def user(username):
 
 @main.route('/tag/<id>')
 def tag(id=0):
+    tag_id = id
+    page = request.args.get('page', 1, type=int)
     tag = Tag.query.filter_by(id=id).first()
     if tag == None:
-        posts = Post.query.all()
+        query = Post.query
     else:
-        posts = tag.post.all()
-        print(posts)
+        query = tag.post
+    pagination = query.order_by(Post.timestamp.desc()).paginate(
+        page, per_page=current_app.config['POSTS_PER_PAGE'],
+        error_out=False
+    )
+    posts = pagination.items
     tags = Tag.query.all()
 
-
-    return render_template('tag.html', tags=tags, posts=posts)
+    return render_template('tag.html', tags=tags, posts=posts, pagination=pagination, tag_id=tag_id)
 
 # 测试图片上传
 @main.route('/upload/')

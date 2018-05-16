@@ -1,13 +1,13 @@
 <ul class="comments" style="list-style-type:none">
     {% for comment in comments %}
     <li class="comment row">
-        <div class="comment-thumbnail col-sm-1">
+        <div class="comment-thumbnail col-sm-1" align="center">
             <a href="{{ url_for('.user', username=comment.author.username) }}">
                    <img src="{{ comment.author.gravatar(size=40) }}" class="img-rounded profile-thumbnail">
             </a>
             <div class="comment-author"><a href="{{ url_for('.user', username=comment.author.username) }}">{{ comment.author.username }}</a> </div>
         </div> 
-        <div class="comment-content col-sm-11">
+        <div class="comment-content col-sm-9 row">
             <div class="comment-body">
                 {% if comment.disabled %}
                     <p><i>该评语已被管理员屏蔽</i></p>
@@ -23,6 +23,8 @@
             </div>
             <div class="comment-date">{{ moment(comment.timestamp).fromNow() }}</div>
 
+        </div>
+        <div class="col-sm-2 row">
             {% if moderate %}
                 <br>
                 {% if comment.disabled %}
@@ -35,7 +37,8 @@
                     </a>
                 {% endif %}
             {% endif %}
-            </div>
+        </div>
+
     </li>
         <hr>
     {% endfor %}
