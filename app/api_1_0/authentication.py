@@ -26,9 +26,9 @@ def verify_password(email_or_token, password):
     return user.verify_password(password)
 
 # 生成认证令牌 该令牌也要添加到 api 蓝本中
-@api.route('/token')
+@api.route('/token/', methods=['POST'])
 def get_token():
-    if g.current_user.is_anonymous() or g.token_used:
+    if g.current_user.is_anonymous or g.token_used:
         return unauthorized('无效认证')
     return jsonify({'token': g.current_user.generate_auth_token(
         expiration=3600), 'expiration':3600})
@@ -38,12 +38,6 @@ def get_token():
 def auth_error():
     return unauthorized('无效认证')
 
-# 保护路由
-@api.route('/posts/')
-@auth.login_required
-def get_posts():
-    pass
-
 # 所有 api 调用都先调用该函数，进行认证
 @api.before_request
 @auth.login_required
@@ -52,7 +46,7 @@ def before_request():
         not g.current_user.confirmed:
         return forbidden('未注册用户')
 
-@api.route('/posts/1')
-def get_post():
-    pass
-    return jsonify({'post':'post1'})
+# @api.route('/posts/1')
+# def get_post():
+#     pass
+#     return jsonify({'post':'post1'})

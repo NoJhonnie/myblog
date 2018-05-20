@@ -1,6 +1,8 @@
 # coding=utf-8
 from flask import request, jsonify, render_template
 
+from app.api_1_0 import api
+from app.exceptions import ValidationError
 from app.main import main
 
 
@@ -16,3 +18,9 @@ def forbidden(message):
 
 def unauthorized(message):
     return jsonify({'error':'unauthorized', 'message':message}), 401
+def bad_request(message):
+    return jsonify({'error':'bad request', 'message':message})
+
+@api.errorhandler(ValidationError)
+def validation_error(e):
+    return bad_request(e.args[0])

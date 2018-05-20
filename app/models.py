@@ -3,7 +3,7 @@ import hashlib
 from datetime import datetime
 
 import bleach
-from flask import current_app
+from flask import current_app, url_for
 from flask_login import UserMixin, AnonymousUserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from jieba.analyse import ChineseAnalyzer
@@ -13,6 +13,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, login_manager
 
 # 权限控制
+from app.exceptions import ValidationError
+
+
 class Permission:
     FOLLOW = 0x01
     COMMENT = 0x02
@@ -117,6 +120,19 @@ class User(UserMixin, db.Model):
             self.avatar_hash = self.gravatar_hash()
         self.follow(self)
 
+    # 用户转换为 json 格式
+    def to_json(self):
+        json_user = {
+            'url':url_for('api.get_post', id=self.id, _external=True),
+            'username': self.username,
+            'member_since':self.member_since,
+            'last_seen':self.last_seen,
+            'posts':url_for('api.get_user_posts', id=self.id, _external=True),
+            'followed_posts':url_for('api.get_user_followed_posts', id=self.id, _external=True),
+            'post_count':self.posts.count()
+        }
+        return json_user
+
     @staticmethod
     def add_self_follows():
         for user in User.query.all():
@@ -147,34 +163,24 @@ class User(UserMixin, db.Model):
         return self.followers.filter_by(
             follower_id=user.id).first() is not None
 
-
-    #生成假用户数据
-    @staticmethod
-    def generate_fake(count=100):
-        from sqlalchemy.exc import IntegrityError
-        from random import seed
-        import forgery_py
-
-        seed()
-        for i in range(count):
-            u = User(email=forgery_py.internet.email_address(),
-                     username=forgery_py.internet.user_name(True),
-                     password=forgery_py.lorem_ipsum.word(),
-                     confirmed=True,
-                     name=forgery_py.name.full_name(),
-                     location=forgery_py.address.city(),
-                     about_me=forgery_py.lorem_ipsum.sentence(),
-                     member_since=forgery_py.date.date(True))
-            db.session.add(u)
-            try:
-                db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-
-
     def ping(self):
         self.last_seen = datetime.now()
         db.session.add(self)
+
+    #生成编码后的用户 id 字段值得签名令牌
+    def genereate_auth_token(self, expiration):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration_in = expiration)
+        return s.dumps({'id': self.id})
+
+    #验证对应的用户
+    @staticmethod
+    def verify_auth_token(token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return None
+        return User.query.get(data['id'])
 
 
     #对请求和赋予角色的权限进行按位与操作
@@ -289,22 +295,31 @@ class Post(db.Model):
             markdown(value, output_format='html'),
             tags=allowed_tags, strip=True))
 
-    #生成假的 blog
+    # 从 json 格式创建 blog
     @staticmethod
-    def generate_fake(count=100):
-        from random import seed, randint
-        import forgery_py
+    def from_json(json_post):
+        body = json_post.get('body')
+        title = json_post.get('title')
+        if body is None or body == '':
+            raise ValidationError('blog 没有内容')
+        if title is None or title == '':
+            raise ValidationError('blog 没有标题')
+        return Post(body=body, title=title)
 
-        seed()
-        user_count = User.query.count()
-        for i in range(count):
-            u = User.query.offset(randint(0, user_count - 1)).first()
-            p = Post(title=forgery_py.lorem_ipsum.sentences(randint(1,3)),
-                     body_html='<p>'+forgery_py.lorem_ipsum.sentences(randint(1,3))+'</p>',
-                     timestamp=forgery_py.date.date(True),
-                     author_id=u.id)
-            db.session.add(p)
-            db.session.commit()
+    # 格式化 post 成为 json 格式
+    def to_json(self):
+        json_post = {
+            'url':url_for('api.get_post', id=self.id, _external=True),
+            'body':self.body,
+            'body_html':self.body_html,
+            'title':self.title,
+            'timestamp':self.timestamp,
+            # 'author_url':url_for('api.get_user', id=self.author_id, _external=True),
+            # 'comments': url_for('api.get_post_comments', id=self.id, _external=True),
+            'comment_count':self.comments.count()
+            # 'tags':url_for('api.get_post_tags', id=self.id, _external=True)
+        }
+        return json_post
 
     def __repr__(self):
         return '<Post %s>' % self.title
@@ -341,22 +356,25 @@ class Comment(db.Model):
             markdown(value, output_format='html'),
             tags=allowed_tags, strip=True))
 
-    # 生成假的评论
-    @staticmethod
-    def generate_fake(count=100):
-        from random import seed, randint
-        import forgery_py
+    # 生成 json 格式的 comment
+    def to_json(self):
+        json_comment = {
+            'url':url_for('api.get_comment', id=self.id),
+            'body':self.body,
+            'timestamp':self.timestamp,
+            'body_html':self.body_html,
+            'post_url':url_for('api.get_post', id=self.post_id),
+            'author_url':url_for('api.get_user', id=self.author_id)
+        }
 
-        seed()
-        user_count = User.query.count()
-        post_count = Post.query.count()
-        for i in range(count):
-            u = User.query.offset(randint(0, user_count - 1)).first()
-            c = Comment(body_html='<p>' + forgery_py.lorem_ipsum.sentences(randint(1, 3)) + '</p>',
-                     timestamp=forgery_py.date.date(True),
-                     author_id=u.id, post_id=randint(0, post_count - 1))
-            db.session.add(c)
-            db.session.commit()
+    # 从 json 格式生成 comment
+    @staticmethod
+    def from_json(json_comment):
+        body = json_comment.get('body')
+        if body is None or body == '':
+            raise ValidationError('评论为空')
+        return Comment(body=body)
+
 
 
 @login_manager.user_loader
